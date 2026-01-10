@@ -1,5 +1,41 @@
 # Agent Instructions
 
+## Agent Roles
+
+This repository uses multiple agent roles.
+
+### Writer Agent (main branch only)
+- Scope: Works on `main` only and is responsible for delivering code changes
+- Allowed: Modify code, run quality gates, commit, and push to `main`
+- Required: Follow the "Landing the Plane" workflow every session
+- Issue workflow: Uses Beads to select, track, and complete work
+
+### Reader Agent (NO CODE WRITES)
+- Scope: Read-only review on `main`
+- Prohibited: Any code edits, commits, pushes, or branch changes
+- Allowed activity:
+  - Create Beads issues
+  - Add review notes
+  - Review recent commits on `main`
+- All contributions are recorded via Beads notes or new issues
+
+## Reader Agent Workflow (Required)
+
+Reader agents operate in a read-only capacity.
+
+Allowed commands:
+```bash
+bd sync
+bd list
+bd show <id>
+bd new "<issue title>"
+bd note <id> "<review or suggestion>"
+git checkout main  # only to ensure you're on main
+git pull --rebase
+git log
+git show <commit>
+```
+
 ## Issue Tracking
 
 This project uses **bd (beads)** for issue tracking.
