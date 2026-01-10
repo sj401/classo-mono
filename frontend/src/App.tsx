@@ -1,6 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 
 const CODE_VERIFIER_KEY = 'cognito_pkce_verifier'
@@ -12,6 +10,18 @@ type AuthConfig = {
   logoutUri: string
   scope: string
   authority?: string
+}
+
+type TranscriptSegment = {
+  start: number
+  end: number
+  text: string
+}
+
+type TranscriptResponse = {
+  text: string
+  language: string | null
+  segments: TranscriptSegment[]
 }
 
 function getAuthConfig(): AuthConfig {
@@ -92,6 +102,15 @@ function getUserLabel() {
   }
 }
 
+function formatTimestamp(seconds: number) {
+  if (!Number.isFinite(seconds)) {
+    return '0:00.00'
+  }
+  const minutes = Math.floor(seconds / 60)
+  const remaining = seconds % 60
+  return `${minutes}:${remaining.toFixed(2).padStart(5, '0')}`
+}
+
 function randomVerifier(length = 64) {
   const bytes = new Uint8Array(length)
   crypto.getRandomValues(bytes)
@@ -159,32 +178,198 @@ async function exchangeCodeForTokens(config: AuthConfig, code: string) {
 }
 
 function DefaultApp({ userLabel }: { userLabel: string }) {
-  const [count, setCount] = useState(0)
+  const [file, setFile] = useState<File | null>(null)
+  const [language, setLanguage] = useState('')
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [result, setResult] = useState<TranscriptResponse | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl('')
+      return
+    }
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+    return () => {
+      URL.revokeObjectURL(url)
+    }
+  }, [file])
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!file || isSubmitting) {
+      return
+    }
+
+    setIsSubmitting(true)
+    setError('')
+    setResult(null)
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const params = new URLSearchParams()
+    if (language.trim()) {
+      params.set('language', language.trim())
+    }
+
+    try {
+      const query = params.toString()
+      const url = query
+        ? `/api/transcribe/segment?${query}`
+        : '/api/transcribe/segment'
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        let message = 'Transcription failed'
+        try {
+          const payload = (await response.json()) as { detail?: string }
+          if (payload.detail) {
+            message = payload.detail
+          }
+        } catch {
+          // ignore JSON parsing errors
+        }
+        setError(message)
+        return
+      }
+
+      const payload = (await response.json()) as TranscriptResponse
+      setResult(payload)
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Unable to reach the API'
+      setError(message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleReset = () => {
+    setFile(null)
+    setLanguage('')
+    setError('')
+    setResult(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const fileMeta = file
+    ? `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`
+    : 'WAV, MP3, M4A, FLAC, or OGG'
+
+  const statusMessage = isSubmitting
+    ? 'Transcribing...'
+    : error
+      ? error
+      : result
+        ? 'Transcription complete'
+        : ''
 
   return (
-    <>
-      {userLabel ? <h2 className="auth-greeting">Hello {userLabel}</h2> : null}
-      <div>
-        <a href="https://vite.dev" target="_blank" rel="noreferrer">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((current) => current + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <section className="transcribe-shell">
+      <header className="transcribe-header">
+        <div>
+          {userLabel ? (
+            <p className="auth-greeting">Hello {userLabel}</p>
+          ) : null}
+          <h1 className="transcribe-title">Audio segment transcription</h1>
+          <p className="transcribe-subtitle">
+            Upload a 30–60 second clip to get a fast transcript.
+          </p>
+        </div>
+        <div className="transcribe-meta">
+          {result?.language ? (
+            <span>Language: {result.language}</span>
+          ) : (
+            <span>Language: auto-detect</span>
+          )}
+          {result ? <span>Segments: {result.segments.length}</span> : null}
+        </div>
+      </header>
+
+      <form className="transcribe-form" onSubmit={handleSubmit}>
+        <div className="field-grid">
+          <label className="field">
+            <span className="field-label">Audio file</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*"
+              className="file-input"
+              onChange={(event) => {
+                const [next] = event.target.files ?? []
+                setFile(next ?? null)
+                setResult(null)
+                setError('')
+              }}
+            />
+            <span className="field-hint">{fileMeta}</span>
+          </label>
+          <label className="field">
+            <span className="field-label">Language (optional)</span>
+            <input
+              type="text"
+              className="text-input"
+              placeholder="en"
+              value={language}
+              onChange={(event) => setLanguage(event.target.value)}
+            />
+            <span className="field-hint">Leave empty to auto-detect.</span>
+          </label>
+        </div>
+
+        <div className="transcribe-actions">
+          <button type="submit" disabled={!file || isSubmitting}>
+            {isSubmitting ? 'Transcribing…' : 'Transcribe'}
+          </button>
+          <button type="button" className="secondary-button" onClick={handleReset}>
+            Reset
+          </button>
+          {statusMessage ? (
+            <span className={error ? 'status error' : 'status'}>
+              {statusMessage}
+            </span>
+          ) : null}
+        </div>
+      </form>
+
+      {previewUrl ? (
+        <div className="audio-preview">
+          <audio controls src={previewUrl} />
+        </div>
+      ) : null}
+
+      {result ? (
+        <div className="transcribe-results">
+          <div className="transcript-output">
+            {result.text || 'No speech detected in this clip.'}
+          </div>
+          {result.segments.length ? (
+            <div className="segment-list">
+              {result.segments.map((segment, index) => (
+                <div
+                  key={`${segment.start}-${segment.end}-${index}`}
+                  className="segment-item"
+                >
+                  <span className="segment-time">
+                    {formatTimestamp(segment.start)}–{formatTimestamp(segment.end)}
+                  </span>
+                  <span className="segment-text">{segment.text}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
   )
 }
 

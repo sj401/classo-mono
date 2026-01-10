@@ -51,6 +51,182 @@
   color: #6b7280;
 }
 
+.transcribe-shell {
+  margin: 2.5rem auto 0;
+  max-width: 820px;
+  padding: 2.25rem;
+  border-radius: 24px;
+  border: 1px solid #1f2937;
+  background: #0f172a;
+  box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+  text-align: left;
+}
+
+.transcribe-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.transcribe-title {
+  margin: 0 0 0.35rem;
+  font-size: 2rem;
+  color: #f8fafc;
+}
+
+.transcribe-subtitle {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.transcribe-meta {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  text-align: right;
+}
+
+.transcribe-form {
+  margin-top: 1.75rem;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field-label {
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.field-hint {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.file-input,
+.text-input {
+  border-radius: 12px;
+  border: 1px solid #334155;
+  background: #0b1220;
+  padding: 0.65rem 0.8rem;
+  color: #f8fafc;
+}
+
+.file-input::file-selector-button {
+  margin-right: 0.75rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.text-input::placeholder {
+  color: #64748b;
+}
+
+.transcribe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.secondary-button {
+  border-color: #334155;
+  background: transparent;
+  color: #e2e8f0;
+}
+
+.status {
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.status.error {
+  color: #fca5a5;
+}
+
+.audio-preview {
+  margin-top: 1.5rem;
+}
+
+.audio-preview audio {
+  width: 100%;
+}
+
+.transcribe-results {
+  margin-top: 1.5rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.transcript-output {
+  padding: 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #1f2937;
+  background: #0b1220;
+  color: #f8fafc;
+  white-space: pre-wrap;
+}
+
+.segment-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.segment-item {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(51, 65, 85, 0.7);
+}
+
+.segment-time {
+  font-variant-numeric: tabular-nums;
+  color: #93c5fd;
+}
+
+.segment-text {
+  color: #e2e8f0;
+}
+
+@media (max-width: 900px) {
+  .transcribe-shell {
+    padding: 1.5rem;
+  }
+
+  .transcribe-meta {
+    text-align: left;
+  }
+
+  .field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .segment-item {
+    grid-template-columns: 1fr;
+  }
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
